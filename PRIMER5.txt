@@ -1,0 +1,64 @@
+#define N 8
+__host__ void stampajMatricu(int*mat,int N)
+{
+    for(int i=0;i<N;i++)
+    {
+        printf("[");
+        for(int j=0;j<N;j++)
+            printf("%d ",mat[i*N+j]);
+        printf("]\n");
+    }
+}
+__global__ void transponuj(int*matIn,int*matOut,int N)
+{
+    int tid=(blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x*blockDim.y+(threadIdx.y*blockDim.x+threadIdx.x);
+    int niti=gridDim.x*gridDim.y;
+    niti*=blockDim.x*blockDim.y;
+    int vrsta;
+    int kolona;
+    int i=tid;
+    while(i<N*N)
+    {
+        vrsta=i/N;
+        kolona=i%N;
+        matOut[kolona*N+vrsta]=matIn[vrsta*N+kolona];
+
+        i+=niti;
+    }
+
+
+}
+int main(void)
+{
+    int matrica[N*N];
+    int br=1;
+    for(int i=0;i<N;i++)
+    {
+        for(int j=0;j<N;j++)
+        {
+            matrica[i*N+j]=br;
+            br++;
+
+        }
+
+    }
+    int*matIn;
+    int*matOut;
+    HANDLE_ERROR(cudaMalloc((void**)&matIn,N*N*sizof(int)));
+    HANDLE_ERROR(cudaMalloc((void**)&matOut,N*N*sizof(int)));
+    HANDLE_ERROR(cudaMemcpy(mat,matrica,N*N*sizeof(int),cudaMemcpyHostToDevice));
+    printf("Matrica pre transponovanja:\n");
+    stampajMatricu(matrica,N);
+    dim3 BlockDim(2,2);
+    dim3 GridDim(2,4);
+    
+    transponuj<<<GridDim,BlockDim>>>(matIn,matOut,N);
+    HANDLE_ERROR(cudaMemcpy(matrica,matOut,N*N*sizeof(int),cudaMemcpyDeviceToHost));
+    printf("Matrica posle transponovanja:\n");
+    stampajMatricu(matrica,N);
+    HANDLE_ERROR(cudaFree(matIn));
+    HANDLE_ERROR(cudaFree(matOut));
+    return 0;
+    
+
+}

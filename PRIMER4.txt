@@ -1,0 +1,52 @@
+#define N 250
+#define M 10
+#define K N/M
+__global__ void kreirajParcijalniRezultat(int* input,int* output,int brojEl)
+{
+    int tid=blockDim.x*blockIdx.x+threadIdx.x;
+    output[tid]=0;
+    int val=tid;
+    for(int i=0;i<brojEl;i++)
+    {
+        val+=i*gridDim.x*blockDim.x;
+        output[tid]+=input[val]==5? 1 : 0;
+
+
+    }
+}
+__global__ void prebroji(int* parcRez,int*rez,int kolko)
+{
+    *rez=0;
+    for(int i=0;i<kolko;i++)
+        *rez+=parcRez[i];
+    
+
+}
+int main(void)
+{
+    int brojevi[N],rezultati[K];
+    int*dev_in;
+    int*dev_out;
+    HANDLE_ERROR(cudaMalloc((void**)&dev_in,N*sizeof(int)));
+    HANDLE_ERROR(cudaMalloc((void**)&dev_out,K*sizeof(int)));
+    for(int i=0;i<N;i++)
+        brojevi[i]=i*i;
+    HANDLE_ERROR(cudaMemcpy(dev_in,brojevi,N*sizeof(int),cudaMemcpyHostToDevice));
+    dim3 GridDim(5);
+    dim3 BlockDim(5);
+    kreirajParcijalniRezultat<<<GridDim,BlockDim>>>(dev_in,dev_out,M);
+    int brojPojavljivanja=0;
+    int* dev_poj;
+    HANDLE_ERROR(cudaMalloc((void**)&dev_poj,sizeof(int)));
+    prebroji<<<1,1>>>(dev_out,dev_poj,K);
+    HANDLE_ERROR(cudaMemcpy(&brojPojavljivanja,dev_poj,sizeof(int),cudaMemcpyDeviceToHost) );
+    printf("Broj pojavljivanja broja 5 u pocetnom nizu je %d\n",brojPojavljivanja);
+    HANDLE_ERROR(cudaFree(dev_in));
+    HANDLE_ERROR(cudaFree(dev_out));
+    HANDLE_ERROR(cudaFree(dev_poj));
+    return 0;
+    
+    
+    
+
+}

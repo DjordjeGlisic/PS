@@ -1,0 +1,41 @@
+#define N 65536
+#define SIZE 256
+__global__void obrada(int*ulazni,int N,int*parcijalni)
+{
+    int tid=threadIdx.x+(2*blockDim.x)*blockIdx.x;
+    __shared__ int buff[SIZE+1];
+    size[threadIdx.x]=ulazni[tid]+ulazni[tid+blockDim.x];
+    __syncThreads();
+    for(int s=blokcDim.x/2;s>0;s/=2)
+    {
+        if(threadIdx.x<s)
+        {
+            buff[threadIdx.x]+=buff[threadIdx.x+s];
+        }
+        _syncthreads();
+    }
+    parcijalni[blockIdx.x]=buff[0];
+
+}
+int main(void)
+{
+    int broj=1;
+    int niz[N];
+    for(int i=0;i<N;i++)
+        niz[i]=broj++;
+    int grid=N/SIZE/2;
+    int*dev_niz;
+    int* dev_res; 
+    cudaMalloc((void**)&dev_niz,N*sizeof(int));
+    cudaMalloc((void**)&dev_res,grid*sizeof(int));
+    
+    cudaMemcpy(dev_niz,niz,N*sizeof(int),cudaMemcpyHostToDevice);
+    dim3 BlockDim(SIZE);
+    dim3 GridDim(grid);
+    obrada<<<GridDim,BlockDIm>>>(dev_niz,N,dev_res);
+    obrada<<1,BlockDim>>>(dev_res,N,dev_res);
+    int sum;
+    cudaMemcpy(&sum,dev_res,1*sizeof(int),cudaMemcpyDeviceToHost);
+    printf("Suma prvih 2 na 16 prirodnih brojeva iznosi: %d\n",sum);
+    return 0;
+}

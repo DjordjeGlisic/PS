@@ -1,0 +1,70 @@
+__global__ void saberiVektore(int*vektor1,int*vektor2,int*vektor3,N)
+{
+    //pod a) int tid=blockIdx.x;
+    // pod b) int tid=threadIdx.x;
+    //pod v) int tid=blockDim.x*blockdIdx.x+threadIdx.x;
+    // pod g) int tid=blockDim.x*blockIdx.x+threadIdx.x;
+    if(tid<N)
+    {
+        vektor3[tid]=vektor1[tid]+vektor2[tid];
+    }
+    //pod g)
+    while(tid<N)
+    {
+        vektor3[tid]=vektor1[tid]+vetor2[tid];
+        tid+=blockDim.x*gridDim.x;
+    }
+
+}
+#define N 10
+#define M 5
+#define K 2
+#define L 128
+int main(void)
+{
+    int a[N];
+    int b[N];
+    int c[N];
+    int* a_dev,b_dev,c_dev;
+    for(int i=0;i<N;i++)
+    {
+        a[i]=i*i;
+        b[i]=i*N;
+    }
+    //zauzece memorije
+    HANDLE_ERROR(cudaMalloc((void**)&a_dev,N*sizeof(int)));
+    HANDLE_ERROR(cudaMalloc((void**)&b_dev,N*sizeof(int)));
+    HANDLE_ERROR(cudaMalloc((void**)&c_dev,N*sizeof(int)));
+    //kopiranje podataka promenljivih a,b u dev_a,dev_b respektivno
+    HANDLE_ERROR(cudaMemcpy(dev_a,a,N*sizeof(int),cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(dev_b,b,N*sizeof(int),cudaMemcpyHostToDevice));
+    //poziv kernel funkcije
+    // a)   dim3 GridDim(N);
+            dim3 BlockDim(1);
+    // b)   dim3 GridDim(1);
+            dim3 BlockDim(N);
+    // v)   dim3 GridDim(M);
+            dim3 BlockDim(K);
+    // g)   dim3 GridDim((N+L-1)/L);
+            dim3 BlockDim(L);
+     saberiVektore<<<GridDim,BlockDim>>>(dev_a,dev_b,dev_c,N);
+    HANDLE_ERROR(cudaMemcpy(c,dev_c,N*sizeof(int),cudaMemcpyDeviceToHost));
+    printf("Vektor c=[");
+    for(int i=0;i<N;i++)
+        printf("%d ",c[i]);
+    printf("]\");
+    return 0;
+    HANDLE_ERROR(cudaFree(dev_a));
+    HANDLE_ERROR(cudaFree(dev_b));
+    HANDLE_ERROR(cudaFree(dev_c));
+    return 0;
+    
+    
+    
+
+    
+    
+
+
+
+}

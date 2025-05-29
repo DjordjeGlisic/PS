@@ -1,0 +1,50 @@
+#include<stdio.h>
+#define N 100
+#define M 50
+#define TILE 32
+__global__ void transponuj(int*matrica,int N,int M)
+{
+    int xIndex,yIndex;
+    __shared__ int mds[N][M+1];
+    xIndex=blockIdx.x*blockDim.x+threadIdx.x;
+    yIndex=blockIdx.y*blockDim.y+threadIdx.y;
+    mds[threadIdx.y][threadIdx.x]=matrica[xIndex+N*yIndex];
+    _syncthreads();
+    xIndex=blockIdx.y*blockDim.y+threadIdx.x;
+    yIndex=blockIdx.x*blockDim.x+threadIdx.y;
+    
+    
+    matrica[yIndex+M*xIndex]=mds[treadIdx.x][threadIdx.y];
+
+    
+}
+int main(void)
+{
+    int* mat=malloc(N*M*sizeof(int));
+    int* mat_dev;
+    cudaMalloc((void**)&mat_dev,N*M*sizeof(int));
+    int br=1;
+    for(int i=0;i<N;i++)
+    {
+        for(int j=0;j<M;j++)
+        {
+            mat[i*M+j]=br++;
+        }
+    }
+    cudaMemcpy(mat_dev,mat,N*M*sizeof(int),cudaMemcpyHostToDevice);
+    dim3 GridDim(2,2)
+    dim3 BlockDim(2,2);
+    transponuj<<<N,M>>>(mat_dev,N,M);
+    cudaMemcpy(mat,mat_dev,N*M*sizeof(int),cudaMemcpyDeviceToHost);
+    for(int i=0;i<N;i++)
+    {
+        printf("[");
+        for(int j=0;j<M;j++)
+            printf("%d ",mat[i*M+j]);
+        printf("]\n");
+    }
+    cudaFree(mat_dev);
+    
+    free(mat);
+    return 0;
+}

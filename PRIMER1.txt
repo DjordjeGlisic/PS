@@ -1,0 +1,10 @@
+__global__ void pozivFje(void)
+{
+    printf("Ovo se izvrsava na gpu\n");
+}
+int main(void)
+{
+    pozivFje<<<1,1>>();
+    return 0;
+
+}

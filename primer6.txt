@@ -1,0 +1,105 @@
+#include<stdio.h>
+#define W 1024
+#define N 5
+#define TILE_W 32
+//pod a)
+__global__ void mnozi(int* matA,int*  matB,int* res,int N)
+{
+    int tid=threadIdx.y*N+threadIdx.x;
+    res[tid]=0;
+    int pom=0;
+    for(int k=0;k<N;k++)
+    {
+        pom+=matA[threadIdx.y*N+k]*matB[k*N+threadIdx.x];
+    }
+    res[tid]=pom;
+}
+//pod b)
+__global__ void mnozi(int* matA,int*  matB,int* res,int W)
+{
+    int xIndex=blockIdx.x*blockDim.x+threadIdx.x;
+    int yIndex=blockIdx.y*blockDim.y+threadIdx.y;
+    int tid=xIndex.*W+yIndex;
+    res[tid]=0;
+    int pom=0;
+    for(int k=0;k<W;k++)
+        pom+=matA[xIndex*W+k]*matB[k*W+yIndex];
+    res[tid]=pom;
+  
+
+    
+}
+//pod v)
+__global__ void mnozi(int*matA,int* matB,int*res,int W)
+{
+    __shared__ int mdsA[TILE_W][TILE_W+1];
+    __shared__ int mdsB[TILE_W][TILE_W+1];
+    int xIndex=blockIdx.x*blockDim.x+threadIdx.x;
+    int yIndex=blockIdx.y*blockDim.y+threadIdx.y;
+    for(int m=0;i<W/TILE_W;m++)
+    {
+        mdsA[threadIdx.y][threadIdx.x]=matA[xIndex*W+(m*TILE_W+threadIdx.x)];
+        mdsB[threadIdx.y][threadIdx.x]=matB[yIndex+(m*TILE_W+threadIdx.y)*W];
+
+        __syncThreads();
+        
+    }
+    int tid=xIndex*W+yIndex;
+    rez=0;
+    for(int k=0;k<W;k++)
+    {
+        rez+=mdsA[threadIdx.y][k]*mdsB[k][threadIdx.x];
+        __syncThreads();
+    }
+    res[tid]=rez;
+}
+
+
+int main(void)
+{
+    //pokazivaci na memoriju hosta
+    int*a;
+    int*b;
+    //zauzimanje memorije hosta
+    a=(int)malloc(N*N*sizeof(int));
+    b=(int)malloc(N*N*sizeof(int));
+    for(int i=0;i<N;i++)
+    {
+        for(int j=0;j<N;j++)
+        {
+            a[i*N+j]=50+i;
+            b[i*N+j]=50-i;
+        }
+    }
+    //pokazivaci na memoriju uredjaja
+    int*dev_a;
+    int*dev_b;
+    int*dev_c;
+    //zauzimanje memorije uredjaja
+    cudaMalloc((void**)&dev_a,N*N*sizeof(int));
+    cudaMalloc((void**)&dev_b,N*N*sizeof(int));
+    cudaMalloc((void**)&dev_c,N*N*sizeof(int));
+    //kopiranje iz memorije hosta na memoriju uredjaja iste podatke/sadrzaj vektora hosta
+    cudaMemcpy(dev_a,a,N*N*sizeof(int),cudaMemcpyHostToDevice);
+    cudaMemcpy(dev_b,b,N*N*sizeof(int),cudaMemcpyHostToDevice);
+    //pod a)mnozi<<<1,N*N>>>(dev_a,dev_b,dev_c,N); jedan blok sa NxN elemenata
+    // pod b) i pod v)
+    dim3 GridDim(W/TILE/W,W/TILE_W);
+    dim3 BlockDim(TILE_W,TILE_W);
+    mnozi<<<GridDim,BlockDim>>>(dev_a,dev_b,dev_c,N);
+    cudaMemcpy(a,dev_c,N*N*sizeof(int),cudaMemcpyDeviceToHost);
+    for(int i=0;i<N ili W;i++)
+    {
+        printf("[");
+        for(int j=0;j<N ili W;j++)
+        {
+            printf("%d ",a[i*N ili W+j]);
+        }
+        printf("]\n");
+    }
+    
+    cudaFree(dev_a);
+    cudaFree(dev_b);
+    cudaFree(dev_c);
+    return 0;
+}
