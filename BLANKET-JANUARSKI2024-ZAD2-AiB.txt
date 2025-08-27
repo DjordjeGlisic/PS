@@ -1,0 +1,96 @@
+#include<stdio.h>
+#include<cuda.h>
+#include<malloc.h>
+#include<math.h>
+#define N 1024
+#define BLOK 32
+#define GRID N/BLOK/2
+__global__ void  maksimalnePovrsine<<<GRID,BLOK>>>(float* matrica,int N,float*rezultati)
+{
+   int tid=blockDim.x*blockIdx.x+threadIdx.x;
+   int v=tid;
+   rezultati[tid]=-1;
+   while(v<N)
+   {
+        float p=Math.pow(matrica[2*N+v],2)*Math.PI;
+        if(rezultati[tid]<p)
+            rezultati[tid]=p;
+        v+=gridDim.x*blockDim.x;
+
+   }
+}
+__host__ int nadjiNajvecu(float*devRes,float* nizKruznica,int N)
+{
+     float rez[BLOK*GRID];
+    cudaMemcpy(rez,devRes,GRID*BLOK*sizeof(float),cudaMemcpyDeviceToHost);
+    float maxPov=-1;
+    int indeks;
+    for(int i=0;i<GRID*BLOK;i++)
+    {
+        if(maxPov<rez[i])
+        {
+
+            maxPov=rez[i];
+        }
+    }
+    for(int i=0;i<N;i++)
+    {
+        float pov=powf(nizKruznica[2*N+i],2)*M_PI;
+        if(pov==maxPov)
+        {
+            indeks=i;
+            break;
+        }
+    }
+    
+    printf("Maksimalnu povrsinu kruga poseduje kruznica sa rednim brojem %d sa povrsinom %lf koja ima parametre (%lf,%lf,%lf)\n",indeks,maxPov,nizKruznica[indeks],nizKruznica[N+indeks],nizKruznica[2*N+indeks] );
+    return indeks;
+}
+int main(int argc,char*argv[])
+{
+ 
+    float*nizKruznica=(float*)malloc(N*3*sizeof(float));
+    for(int i=0;i<N;i++)
+    {
+
+        printf("Uneiste x koorinatu za centar kruznice  %d\n",i);
+        scanf("%lf,",&nizKruznica[i]);
+        
+    }
+    int kol=N;
+    for(int i=0;i<N;i++)
+    {
+        printf("Unesite y koordinatu za centar kruznice %d\n",i);
+        scanf("%lf,",&nizKruznica[kol]);
+        kol++;
+
+    }
+    for(int i=0;i<N;i++)
+    {
+        printf("Unesite poluprecnik kruznice %d\n",i);
+        scanf("%lf,",&nizKruznica[kol]);
+        kol++;
+
+    }
+    float*devMat;
+    float*devRes;
+    cudaMalloc((void**)&devMat,3*N*sizeof(float));
+    cudaMalloc((void**)&devRes,GRID*BLOK*sizeof(float));
+    cudaMemcpy(devMat,nizKruznica,N*3*sizeof(float),cudaMemcpyHostToDevice);
+    maksimalnePovrsine<<<GRID,BLOK>>>(devMat,N,devRes);
+   int indeks= nadjiNajvecu(devRes,nizKruznica, N)
+    //////ZADATAK POD B///////////////
+   nizKruznica[indeks+2*N]=-1;
+   cudaMemcpy(devMat,nizKruznica,3*n*sizeof(float),cudaMemcpyHostToDevice);
+   maksimalnePovrsine<<<GRID,BLOK>>>(devMat,N,devRes);
+    indeks=nadjiNajvecu(devRes,nizKruznica,N);
+    
+///////////////////////////////////////////////////
+    cudaFree(devMat);
+    cudaFree(devRes);
+    cudaFree(devRez);
+
+    
+
+    
+}

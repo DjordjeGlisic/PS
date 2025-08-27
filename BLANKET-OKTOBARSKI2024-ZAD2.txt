@@ -1,0 +1,72 @@
+#include<stdio.h>
+#include<cuda.h>
+#define blockDim 256
+__device__ int proveriPrekpalapnje(int a,int b,int c,int d,int a1,int b1,int c1,int d1)
+{
+    if ( c1<a||a<c1||d1<b||b<d1)
+        return 0;
+    return 1;
+}
+__global__ void racunaj(int*ulaz,int brojPravougaonika,int*izlaz)
+{
+    int tid=blockIdx.x*blockDim.x+threadIdx.x;
+    while(tid<brojPravougaonika)
+    {
+        izlaz[tid]=0;
+        for(int i=0;i<brojPravougaonika;i++)
+        {
+            int a=ulaz[tid];
+            int b=ulaz[tid*brojPravougaonika];
+            int c=ulaz[tid*2*brojPravougaonika];
+            int d=ulaz[tid*3*brojPravougaonika];
+            
+            if(tid!==i)
+            {
+                int kompA=ulaz[i];
+                int kompB=ulaz[brojPravougaonika*i];
+                int kompC=ulaz[2*brojPravougaonika*i];
+                int kompD=ulaz[3*brojPravougaonika*i];
+                izlaz[tid]=proveriPrekpalapnje(a,b,c,d,kompA,kompB,kompC,kompD);
+            }
+        }
+        tid+=gridDim.x*BlockDim.x;
+
+    }
+}
+int main(int argc,char*argv[])
+{
+    int n;
+    scanf("%d",&n);
+    int*pravougaonici=(int*)malloc(4*n*sizeof(int));
+    for(int i=0;i<n;i++)
+    {
+        prinf("Uneiste koordinate a,b- to su kooridante gornjeg levog ugla i kooridnate-c,d to su koordiante dole desnog ugla tacaka %d pravougaonika\n",i);
+        for(int j=0;j<4;j++)
+        {
+            scanf("%d",&matrica[i*n+j]);
+
+        }
+    }
+    int* devPrav;
+    cudaMalloc((void**)&devPrav,4*n*sizeof(int));
+    cudaMemcpy(devPrav,pravougaonik,4*n*sizeof(int),cudaMemcpyHostToDevice);
+   
+    int*devRes;
+    cudaMalloc((void**)&devRes,n*sizeof(int));
+    racunaj<<gridDim,blockDim>>(matDev,n,devRes);
+    int*rezulatat=(int*)malloc(n*sizeof(int));
+    cudaMemcpy(rezulatat,devRes,n*sizeof(int),cudaMemcpyDeviceToHost);
+    printf("Rezultujuci vektor:=[");
+    for(int i=0;i<n;i++)
+    {
+        printf("Pravougaonik %d po redu ima vrednsot %d\n",i,rezultat[i]);
+        
+    }
+    printf("]\n");
+    cudaFree(devPrav);
+    cudaFree(devRes);
+    return 0;
+    
+    
+    
+}
